@@ -53,7 +53,7 @@ def listen(fbClient):
             for msg in r.iter_lines():
                 if msg:
                     print(msg)
-                    jmsg = json.loads(msg)
+                    jmsg = json.loads(msg.decode())
                     if jmsg["gateway"] == "":
                         continue
                     
