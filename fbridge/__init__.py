@@ -1,10 +1,11 @@
 import json
+import argparse
 import requests
 from threading import Thread
 import toml
 
 from fbchat import log, Client
-from fbchat.models import ThreadType, Message 
+from fbchat.models import ThreadType, Message
 
 users = dict()
 threads = dict()
@@ -56,9 +57,9 @@ def listen(fbClient):
                     jmsg = json.loads(msg.decode())
                     if jmsg["gateway"] == "":
                         continue
-                    
+
                     if jmsg["gateway"] == "FBgateway":
-                        sendMsg("bot", "FBgateway", "This gateway is linked to every thread on facebook and can't be used for sending messages.") 
+                        sendMsg("bot", "FBgateway", "This gateway is linked to every thread on facebook and can't be used for sending messages.")
                     else:
                         fbThread = revThreads[jmsg["gateway"]]
                         if len(fbThread) > 10:
@@ -70,16 +71,16 @@ def listen(fbClient):
         r.Close()
 
 
-def readConfig():
-    global username 
+def readConfig(config_path):
+    global username
     global password
     global revThreads
 
     ### Load config
-    f = open("config.toml", "r")
-    toml_string = f.read() 
+    f = open(config_path, "r")
+    toml_string = f.read()
     parsed_toml = toml.loads(toml_string)
-   
+
     userData = parsed_toml["login"]
     username = userData["username"]
     password = userData["password"]
@@ -88,18 +89,29 @@ def readConfig():
     us = parsed_toml["users"]
 
     for key, value in th.items():
-        threads[key]=value["gateway"] 
+        threads[key]=value["gateway"]
 
     for key, value in us.items():
-        users[key]=value["username"] 
+        users[key]=value["username"]
 
     revThreads = {v: k for k, v in threads.items()}
 
-readConfig()
 
-client = FBListener(username, password)
+def main():
+    parser = argparse.ArgumentParser()
+    config_help = 'configuration file to use'
+    parser.add_argument('-c', '--config', required=True, help=config_help)
+    args = parser.parse_args()
 
-t = Thread(target = listen, args=(client,))
-t.start()
+    readConfig(args.config)
 
-client.listen()
+    client = FBListener(username, password)
+
+    t = Thread(target = listen, args=(client,))
+    t.start()
+
+    client.listen()
+
+
+if __name__ == '__main__':
+    main()
